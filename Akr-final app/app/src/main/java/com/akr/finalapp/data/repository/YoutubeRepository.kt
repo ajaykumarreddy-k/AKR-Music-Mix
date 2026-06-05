@@ -79,7 +79,11 @@ class YoutubeRepository @Inject constructor() {
                 YouTubeClient.WEB_REMIX,
                 YouTubeClient.TVHTML5_SIMPLY_EMBEDDED_PLAYER,
                 YouTubeClient.ANDROID_VR_1_43_32,
+                YouTubeClient.ANDROID_VR_NO_AUTH,
+                YouTubeClient.ANDROID_VR_1_61_48,
                 YouTubeClient.IOS,
+                YouTubeClient.IPADOS,
+                YouTubeClient.VISIONOS,
                 YouTubeClient.ANDROID_NO_SDK
             )
 

@@ -108,6 +108,11 @@ fun LibraryFavoritesTab(
             .map { it.currentSong?.id }
             .distinctUntilChanged()
     }.collectAsStateWithLifecycle(initialValue = null)
+    val isPlaying by remember(playerViewModel) {
+        playerViewModel.stablePlayerState
+            .map { it.isPlaying }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = false)
 
     val currentSongListIndex = remember(favoriteSongs.itemCount, currentSongId) {
         if (currentSongId == null) -1
@@ -245,6 +250,9 @@ fun LibraryFavoritesTab(
                         ) { index ->
                             val song = favoriteSongs[index]
                             if (song != null) {
+                                val isCurrent = song.id == currentSongId
+                                val isPlayingThisSong = isCurrent && isPlaying
+
                                 LibraryPlaybackAwareSongItem(
                                     song = song,
                                     playerViewModel = playerViewModel,
@@ -259,7 +267,9 @@ fun LibraryFavoritesTab(
                                         } else {
                                             playerViewModel.showAndPlaySongFromFavorites(song)
                                         }
-                                    }
+                                    },
+                                    isCurrentSong = isCurrent,
+                                    isPlaying = isPlayingThisSong
                                 )
                             } else {
                                 EnhancedSongListItem(

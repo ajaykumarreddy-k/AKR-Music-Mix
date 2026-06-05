@@ -526,7 +526,10 @@ object YouTube {
                 }
                 ArtistItemsContinuationPage(
                     items = items,
-                    continuation = if (items.isEmpty()) null else musicPlaylistShelfContinuation.continuations?.getContinuation()
+                    continuation = if (items.isEmpty()) null else {
+                        musicPlaylistShelfContinuation.contents.getContinuation()
+                            ?: musicPlaylistShelfContinuation.continuations?.getContinuation()
+                    }
                 )
             }
 
@@ -646,10 +649,11 @@ object YouTube {
             .mapNotNull { renderer -> PlaylistPage.fromMusicResponsiveListItemRenderer(renderer) }
 
         val nextContinuation = if (songs.isEmpty()) null else {
-            response.continuationContents
-                ?.sectionListContinuation
-                ?.continuations
-                ?.getContinuation()
+            allContents.getContinuation()
+                ?: response.continuationContents
+                    ?.sectionListContinuation
+                    ?.continuations
+                    ?.getContinuation()
                 ?: response.continuationContents
                     ?.musicPlaylistShelfContinuation
                     ?.continuations

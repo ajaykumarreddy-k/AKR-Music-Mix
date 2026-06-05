@@ -489,19 +489,33 @@ fun ExpressiveScrollBar(
             }
         }
 
-        val dragLabelTargetIndex = when {
-            pendingScrollIndex >= 0 -> pendingScrollIndex
-            listState != null -> listState.firstVisibleItemIndex
-            gridState != null -> gridState.firstVisibleItemIndex
-            else -> -1
-        }
-        val activeDragLabel =
-            if (isDragging && dragLabelProvider != null && dragLabelTargetIndex >= 0) {
-                dragLabelProvider(dragLabelTargetIndex)
-            } else {
-                null
+        val dragLabelTargetIndex by remember(isDragging, pendingScrollIndex, listState, gridState) {
+            derivedStateOf {
+                if (!isDragging) -1
+                else {
+                    when {
+                        pendingScrollIndex >= 0 -> pendingScrollIndex
+                        listState != null -> listState.firstVisibleItemIndex
+                        gridState != null -> gridState.firstVisibleItemIndex
+                        else -> -1
+                    }
+                }
             }
-        val showDragLabel = isDragging && !activeDragLabel.isNullOrBlank()
+        }
+        val activeDragLabel by remember(isDragging, dragLabelProvider) {
+            derivedStateOf {
+                if (isDragging && dragLabelProvider != null && dragLabelTargetIndex >= 0) {
+                    dragLabelProvider(dragLabelTargetIndex)
+                } else {
+                    null
+                }
+            }
+        }
+        val showDragLabel by remember(isDragging) {
+            derivedStateOf {
+                isDragging && !activeDragLabel.isNullOrBlank()
+            }
+        }
 
         LaunchedEffect(activeDragLabel) {
             if (!activeDragLabel.isNullOrBlank()) {

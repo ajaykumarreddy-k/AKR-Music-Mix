@@ -32,24 +32,36 @@ internal fun LibraryPlaybackAwareSongItem(
     isSelectionMode: Boolean = false,
     onLongPress: () -> Unit = {},
     onMoreOptionsClick: (Song) -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isCurrentSong: Boolean? = null,
+    isPlaying: Boolean? = null
 ) {
-    val playbackUiState by remember(song.id, playerViewModel) {
-        playerViewModel.stablePlayerState
-            .map { state ->
-                val isCurrentSong = state.currentSong?.id == song.id
-                LibrarySongPlaybackUiState(
-                    isCurrentSong = isCurrentSong,
-                    isPlaying = isCurrentSong && state.isPlaying
-                )
-            }
-            .distinctUntilChanged()
-    }.collectAsStateWithLifecycle(initialValue = LibrarySongPlaybackUiState())
+    val finalIsCurrentSong: Boolean
+    val finalIsPlaying: Boolean
+
+    if (isCurrentSong != null && isPlaying != null) {
+        finalIsCurrentSong = isCurrentSong
+        finalIsPlaying = isPlaying
+    } else {
+        val playbackUiState by remember(song.id, playerViewModel) {
+            playerViewModel.stablePlayerState
+                .map { state ->
+                    val isCurrent = state.currentSong?.id == song.id
+                    LibrarySongPlaybackUiState(
+                        isCurrentSong = isCurrent,
+                        isPlaying = isCurrent && state.isPlaying
+                    )
+                }
+                .distinctUntilChanged()
+        }.collectAsStateWithLifecycle(initialValue = LibrarySongPlaybackUiState())
+        finalIsCurrentSong = playbackUiState.isCurrentSong
+        finalIsPlaying = playbackUiState.isPlaying
+    }
 
     EnhancedSongListItem(
         song = song,
-        isPlaying = playbackUiState.isPlaying,
-        isCurrentSong = playbackUiState.isCurrentSong,
+        isPlaying = finalIsPlaying,
+        isCurrentSong = finalIsCurrentSong,
         isLoading = false,
         albumArtSize = albumArtSize,
         isSelected = isSelected,

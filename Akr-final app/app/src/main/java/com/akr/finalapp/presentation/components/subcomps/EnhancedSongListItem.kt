@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -241,8 +242,12 @@ fun EnhancedSongListItem(
         Surface(
             modifier = modifier
                 .fillMaxWidth()
-                .scale(selectionScale)
-                .clip(surfaceShape)
+                .graphicsLayer {
+                    scaleX = selectionScale
+                    scaleY = selectionScale
+                    clip = true
+                    shape = surfaceShape
+                }
                 .then(
                     if (showSelectionDecoration) {
                         Modifier.border(

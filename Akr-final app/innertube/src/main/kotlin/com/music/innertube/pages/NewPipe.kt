@@ -110,7 +110,7 @@ class NewPipeUtils(
     ): String? =
         try {
             val url =
-                format.url ?: format.signatureCipher?.let { signatureCipher ->
+                format.url ?: (format.signatureCipher ?: format.cipher)?.let { signatureCipher ->
                     val params = parseQueryString(signatureCipher)
                     val obfuscatedSignature =
                         params["s"]

@@ -101,6 +101,11 @@ fun LibrarySongsTab(
             .map { it.currentSong?.id }
             .distinctUntilChanged()
     }.collectAsStateWithLifecycle(initialValue = null)
+    val isPlaying by remember(playerViewModel) {
+        playerViewModel.stablePlayerState
+            .map { it.isPlaying }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = false)
 
     // Check if list is effectively empty (based on Paging state)
     // val isListEmpty = songs.itemCount == 0 && songs.loadState.refresh is LoadState.NotLoading
@@ -344,6 +349,9 @@ fun LibrarySongsTab(
                                         { onSongLongPress(song) }
                                     }
 
+                                    val isCurrent = song.id == currentSongId
+                                    val isPlayingThisSong = isCurrent && isPlaying
+
                                     LibraryPlaybackAwareSongItem(
                                         song = song,
                                         playerViewModel = playerViewModel,
@@ -353,7 +361,9 @@ fun LibrarySongsTab(
                                         selectionIndex = if (isSelectionMode) getSelectionIndex(song.id) else null,
                                         onLongPress = rememberedOnLongPress,
                                         onMoreOptionsClick = rememberedOnMoreOptionsClick,
-                                        onClick = rememberedOnClick
+                                        onClick = rememberedOnClick,
+                                        isCurrentSong = isCurrent,
+                                        isPlaying = isPlayingThisSong
                                     )
                                 } else {
                                      // Placeholder
