@@ -66,7 +66,7 @@ class NewPipeDownloaderImpl(
                 .Builder()
                 .method(httpMethod, dataToSend?.toRequestBody())
                 .url(url)
-                .addHeader("User-Agent", YouTubeClient.USER_AGENT_WEB)
+                .addHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36")
 
         headers.forEach { (headerName, headerValueList) ->
             if (headerValueList.size > 1) {
@@ -177,11 +177,19 @@ object NewPipeExtractor {
                 "https://www.youtube.com/watch?v=$videoId"
             )
             val streamsList = streamInfo.audioStreams + streamInfo.videoStreams + streamInfo.videoOnlyStreams
-            streamsList.mapNotNull {
-                (it.itagItem?.id ?: return@mapNotNull null) to it.content
+            streamsList.mapNotNull { stream ->
+                val itag = stream.itagItem?.id ?: return@mapNotNull null
+                val rawUrl = stream.content ?: return@mapNotNull null
+                val deobfuscatedUrl = try {
+                    YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(videoId, rawUrl)
+                } catch (e: Exception) {
+                    android.util.Log.e("AKR_MUSIC", "Failed to deobfuscate throttling parameter for itag=$itag", e)
+                    rawUrl
+                }
+                itag to deobfuscatedUrl
             }
         } catch (e: Exception) {
-            // Don't print stack trace - caller handles errors
+            android.util.Log.e("AKR_MUSIC", "❌ newPipePlayer error for videoId=$videoId", e)
             emptyList()
         }
     }

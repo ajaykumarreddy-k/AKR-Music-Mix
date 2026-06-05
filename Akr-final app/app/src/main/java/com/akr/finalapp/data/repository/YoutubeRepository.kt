@@ -4,6 +4,7 @@ import com.akr.finalapp.data.model.Song
 import com.music.innertube.YouTube
 import com.music.innertube.NewPipeExtractor
 import com.music.innertube.models.SongItem
+import com.music.innertube.models.YouTubeClient
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +26,26 @@ class YoutubeRepository @Inject constructor() {
         runCatching {
             val page = YouTube.playlist(playlistId).getOrThrow()
             val title = page.playlist.title
-            val songs = page.songs.filterIsInstance<SongItem>().map { it.toSong() }
+            val allSongs = page.songs.toMutableList()
+            
+            var continuationToken = page.songsContinuation ?: page.continuation
+            var pageCount = 0
+            val maxPages = 50 // Limit to avoid infinite loops, allows up to 5000 songs
+            while (continuationToken != null && pageCount < maxPages) {
+                android.util.Log.d("AKR_MUSIC", "Loading playlist page ${pageCount + 1} with token: $continuationToken")
+                val continuationPageResult = YouTube.playlistContinuation(continuationToken)
+                val continuationPage = continuationPageResult.getOrNull()
+                if (continuationPage != null) {
+                    allSongs.addAll(continuationPage.songs)
+                    continuationToken = continuationPage.continuation
+                    pageCount++
+                } else {
+                    android.util.Log.e("AKR_MUSIC", "Failed to fetch playlist continuation page ${pageCount + 1}", continuationPageResult.exceptionOrNull())
+                    break
+                }
+            }
+            
+            val songs = allSongs.filterIsInstance<SongItem>().map { it.toSong() }
             Pair(title, songs)
         }
     }
@@ -53,20 +73,47 @@ class YoutubeRepository @Inject constructor() {
                 }
             }
 
-            // Strategy 2: WEB_REMIX + NewPipe cipher deobfuscation
-            android.util.Log.d("AKR_MUSIC", "🔄 Falling back to Strategy 2 (WEB_REMIX + cipher)")
-            val webResponse = YouTube.player(videoId).getOrThrow()
-            android.util.Log.d("AKR_MUSIC", "📡 WEB_REMIX status=${webResponse.playabilityStatus?.status} audioFormats=${webResponse.streamingData?.adaptiveFormats?.count { it.mimeType.startsWith("audio/") }}")
+            // Strategy 2: Try various InnerTube clients + NewPipe cipher deobfuscation
+            android.util.Log.d("AKR_MUSIC", "🔄 Falling back to Strategy 2 (Multi-client InnerTube + cipher)")
+            val clientsToTry = listOf(
+                YouTubeClient.WEB_REMIX,
+                YouTubeClient.TVHTML5_SIMPLY_EMBEDDED_PLAYER,
+                YouTubeClient.ANDROID_VR_1_43_32,
+                YouTubeClient.IOS,
+                YouTubeClient.ANDROID_NO_SDK
+            )
 
-            val bestCipherFormat = webResponse.streamingData?.adaptiveFormats
-                ?.filter { it.mimeType.startsWith("audio/") }
-                ?.maxByOrNull { it.bitrate }
-
-            if (bestCipherFormat != null) {
-                // Try plain URL first
-                bestCipherFormat.url?.let { return@runCatching it }
-                // Try cipher deobfuscation
-                NewPipeExtractor.getStreamUrl(bestCipherFormat, videoId)?.let { return@runCatching it }
+            for (client in clientsToTry) {
+                try {
+                    android.util.Log.d("AKR_MUSIC", "🔄 Strategy 2: Trying client ${client.clientName} (${client.friendlyName ?: ""})")
+                    val webResponse = YouTube.player(videoId, client = client).getOrThrow()
+                    
+                    val status = webResponse.playabilityStatus?.status
+                    android.util.Log.d("AKR_MUSIC", "📡 Client ${client.clientName} status=$status")
+                    
+                    val formats = webResponse.streamingData?.adaptiveFormats ?: emptyList()
+                    val audioFormats = formats.filter { it.mimeType.startsWith("audio/") }
+                    android.util.Log.d("AKR_MUSIC", "📡 Client ${client.clientName} audio formats count=${audioFormats.size}")
+                    
+                    if (audioFormats.isNotEmpty()) {
+                        val bestCipherFormat = audioFormats.maxByOrNull { it.bitrate }
+                        if (bestCipherFormat != null) {
+                            // Try plain URL first
+                            bestCipherFormat.url?.let {
+                                android.util.Log.d("AKR_MUSIC", "✅ Strategy 2 succeeded with client ${client.clientName} (plain URL)")
+                                return@runCatching it
+                            }
+                            // Try cipher deobfuscation
+                            val resolvedUrl = NewPipeExtractor.getStreamUrl(bestCipherFormat, videoId)
+                            if (resolvedUrl != null) {
+                                android.util.Log.d("AKR_MUSIC", "✅ Strategy 2 succeeded with client ${client.clientName} (deobfuscated cipher)")
+                                return@runCatching resolvedUrl
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("AKR_MUSIC", "❌ Strategy 2 client ${client.clientName} failed: ${e.message}")
+                }
             }
 
             throw Exception("All stream resolution strategies failed for videoId=$videoId")
