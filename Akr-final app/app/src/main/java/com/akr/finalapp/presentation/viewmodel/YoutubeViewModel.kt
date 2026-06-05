@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.akr.finalapp.data.model.Song
 import com.akr.finalapp.data.repository.YoutubeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -57,11 +59,15 @@ class YoutubeViewModel @Inject constructor(
 
     fun resolveStreamUrl(song: Song, onResolved: (String) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
+            // Repository does IO on Dispatchers.IO internally via withContext
             val result = youtubeRepository.resolveStreamUrl(song.id)
-            if (result.isSuccess) {
-                result.getOrNull()?.let { onResolved(it) } ?: onError("Failed to resolve URL")
-            } else {
-                onError(result.exceptionOrNull()?.localizedMessage ?: "Failed to resolve URL")
+            // Always deliver results on Main thread — Toast & playerViewModel require it
+            withContext(Dispatchers.Main) {
+                if (result.isSuccess) {
+                    result.getOrNull()?.let { onResolved(it) } ?: onError("Failed to resolve URL")
+                } else {
+                    onError(result.exceptionOrNull()?.localizedMessage ?: "Failed to resolve URL")
+                }
             }
         }
     }
@@ -69,11 +75,13 @@ class YoutubeViewModel @Inject constructor(
     fun loadPlaylist(playlistId: String, onSuccess: (String, List<Song>) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             val result = youtubeRepository.getPlaylist(playlistId)
-            if (result.isSuccess) {
-                val pair = result.getOrThrow()
-                onSuccess(pair.first, pair.second)
-            } else {
-                onError(result.exceptionOrNull()?.localizedMessage ?: "Failed to load playlist")
+            withContext(Dispatchers.Main) {
+                if (result.isSuccess) {
+                    val pair = result.getOrThrow()
+                    onSuccess(pair.first, pair.second)
+                } else {
+                    onError(result.exceptionOrNull()?.localizedMessage ?: "Failed to load playlist")
+                }
             }
         }
     }

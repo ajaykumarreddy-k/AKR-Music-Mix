@@ -1,5 +1,7 @@
 package com.akr.finalapp.presentation.screens
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,6 +34,7 @@ fun YoutubePlaylistScreen(
     youtubeViewModel: YoutubeViewModel = hiltViewModel(),
     playerViewModel: PlayerViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val stablePlayerState by playerViewModel.stablePlayerState.collectAsStateWithLifecycle()
     var songs by remember { mutableStateOf<List<Song>>(emptyList()) }
     var title by remember { mutableStateOf("Loading...") }
@@ -38,9 +42,19 @@ fun YoutubePlaylistScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(playlistId) {
+        Log.d("AKR_MUSIC", "📋 Loading playlist: $playlistId")
         youtubeViewModel.loadPlaylist(playlistId,
-            onSuccess = { t, s -> title = t; songs = s; isLoading = false },
-            onError = { e -> errorMessage = e; isLoading = false }
+            onSuccess = { t, s ->
+                Log.d("AKR_MUSIC", "✅ Playlist loaded: $t (${s.size} songs)")
+                title = t
+                songs = s
+                isLoading = false
+            },
+            onError = { e ->
+                Log.e("AKR_MUSIC", "❌ Playlist load error: $e")
+                errorMessage = e
+                isLoading = false
+            }
         )
     }
 
@@ -77,11 +91,22 @@ fun YoutubePlaylistScreen(
                                 isPlaying = stablePlayerState.isPlaying && stablePlayerState.currentSong?.id == song.id,
                                 isCurrentSong = stablePlayerState.currentSong?.id == song.id,
                                 onClick = {
+                                    Log.e("AKR_MUSIC", "👉 PLAYLIST TAP: ${song.title}")
+                                    Toast.makeText(context, "Connecting to YouTube...", Toast.LENGTH_SHORT).show()
                                     youtubeViewModel.resolveStreamUrl(song,
                                         onResolved = { url ->
-                                            playerViewModel.playSongs(listOf(song.copy(contentUriString = url)), song.copy(contentUriString = url), title, playlistId)
+                                            Log.e("AKR_MUSIC", "✅ PLAYLIST URL FOUND: $url")
+                                            playerViewModel.playSongs(
+                                                listOf(song.copy(contentUriString = url)),
+                                                song.copy(contentUriString = url),
+                                                title,
+                                                playlistId
+                                            )
                                         },
-                                        onError = {}
+                                        onError = { err ->
+                                            Log.e("AKR_MUSIC", "❌ PLAYLIST STREAM ERROR: $err")
+                                            Toast.makeText(context, "Error: $err", Toast.LENGTH_LONG).show()
+                                        }
                                     )
                                 },
                                 onMoreOptionsClick = {}

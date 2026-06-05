@@ -32,43 +32,44 @@ class YoutubeRepository @Inject constructor() {
 
     suspend fun resolveStreamUrl(videoId: String): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            // Strategy 1: ANDROID_VR client — returns plain, non-ciphered URLs directly.
-            // No JS deobfuscation needed. Specifically avoids AV1 codec (good for audio-only).
-            val androidResponse = YouTube.player(
-                videoId = videoId,
-                client = com.music.innertube.models.YouTubeClient.ANDROID_VR_NO_AUTH
-            ).getOrNull()
+            android.util.Log.d("AKR_MUSIC", "🔍 resolveStreamUrl START: videoId=$videoId")
 
-            val plainUrl = androidResponse?.streamingData?.adaptiveFormats
-                ?.filter { it.mimeType.startsWith("audio/") && it.url != null }
-                ?.maxByOrNull { it.bitrate }
-                ?.url
+            // Strategy 1: NewPipe direct page scrape — no API auth/PoToken needed.
+            // Uses NewPipe's own JS player extraction pipeline (same as NewPipe app).
+            val newPipeStreams = NewPipeExtractor.newPipePlayer(videoId)
+            android.util.Log.d("AKR_MUSIC", "📡 NewPipe streams count=${newPipeStreams.size}")
 
-            if (plainUrl != null) return@runCatching plainUrl
+            if (newPipeStreams.isNotEmpty()) {
+                // Audio-only itags: 139(48k AAC), 140(128k AAC), 141(256k AAC),
+                //                   249(low WebM), 250(med WebM), 251(high WebM/Opus)
+                val audioItagPreference = listOf(141, 251, 140, 250, 139, 249)
+                val url = audioItagPreference
+                    .firstNotNullOfOrNull { itag -> newPipeStreams.find { it.first == itag }?.second }
+                    ?: newPipeStreams.firstOrNull()?.second
 
-            // Strategy 2: ANDROID_VR older client (1.43.32) — also returns plain URLs
-            val vrOldResponse = YouTube.player(
-                videoId = videoId,
-                client = com.music.innertube.models.YouTubeClient.ANDROID_VR_1_43_32
-            ).getOrNull()
+                if (url != null) {
+                    android.util.Log.d("AKR_MUSIC", "✅ Strategy 1 (NewPipe) succeeded: ${url.take(80)}...")
+                    return@runCatching url
+                }
+            }
 
-            val vrPlainUrl = vrOldResponse?.streamingData?.adaptiveFormats
-                ?.filter { it.mimeType.startsWith("audio/") && it.url != null }
-                ?.maxByOrNull { it.bitrate }
-                ?.url
-
-            if (vrPlainUrl != null) return@runCatching vrPlainUrl
-
-            // Strategy 3: WEB_REMIX response + NewPipe cipher deobfuscation as last resort
+            // Strategy 2: WEB_REMIX + NewPipe cipher deobfuscation
+            android.util.Log.d("AKR_MUSIC", "🔄 Falling back to Strategy 2 (WEB_REMIX + cipher)")
             val webResponse = YouTube.player(videoId).getOrThrow()
+            android.util.Log.d("AKR_MUSIC", "📡 WEB_REMIX status=${webResponse.playabilityStatus?.status} audioFormats=${webResponse.streamingData?.adaptiveFormats?.count { it.mimeType.startsWith("audio/") }}")
 
             val bestCipherFormat = webResponse.streamingData?.adaptiveFormats
                 ?.filter { it.mimeType.startsWith("audio/") }
                 ?.maxByOrNull { it.bitrate }
-                ?: throw Exception("No audio stream found for videoId=$videoId")
 
-            NewPipeExtractor.getStreamUrl(bestCipherFormat, videoId)
-                ?: throw Exception("All stream resolution strategies failed for videoId=$videoId")
+            if (bestCipherFormat != null) {
+                // Try plain URL first
+                bestCipherFormat.url?.let { return@runCatching it }
+                // Try cipher deobfuscation
+                NewPipeExtractor.getStreamUrl(bestCipherFormat, videoId)?.let { return@runCatching it }
+            }
+
+            throw Exception("All stream resolution strategies failed for videoId=$videoId")
         }
     }
 
