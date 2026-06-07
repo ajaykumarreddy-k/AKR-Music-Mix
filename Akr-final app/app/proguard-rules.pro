@@ -213,3 +213,7 @@
     public static int d(...);
     public static int i(...);
 }
+
+# Suppress missing class warnings for optional/runtime-inaccessible JSoup/Rhino dependencies
+-dontwarn com.google.re2j.**
+-dontwarn java.beans.**

@@ -68,7 +68,7 @@ class YoutubeViewModel @Inject constructor(
     fun resolveStreamUrl(song: Song, onResolved: (String) -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             // Repository does IO on Dispatchers.IO internally via withContext
-            val result = youtubeRepository.resolveStreamUrl(song.id)
+            val result = youtubeRepository.resolveStreamUrl(song.id, songTitle = song.title, songArtist = song.artist)
             // Always deliver results on Main thread — Toast & playerViewModel require it
             withContext(Dispatchers.Main) {
                 if (result.isSuccess) {

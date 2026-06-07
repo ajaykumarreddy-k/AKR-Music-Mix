@@ -65,6 +65,27 @@ data class YouTubeClient(
             useWebPoTokens = true,
         )
 
+        val ANDROID_TESTSUITE = YouTubeClient(
+            clientName = "ANDROID_TESTSUITE",
+            clientVersion = "1.9",
+            clientId = "3",
+            userAgent = "okhttp/3.14.9",
+            friendlyName = "Android TestSuite",
+            loginSupported = false,
+            useSignatureTimestamp = false
+        )
+
+        val ANDROID_MUSIC = YouTubeClient(
+            clientName = "ANDROID_MUSIC",
+            clientVersion = "7.27.52",
+            clientId = "67",
+            userAgent = "com.google.android.play.games/21.03.38 (Linux; U; Android 14) gzip",
+            friendlyName = "Android Music",
+            loginSupported = true,
+            useSignatureTimestamp = true
+        )
+
+
         val WEB_CREATOR = YouTubeClient(
             clientName = "WEB_CREATOR",
             clientVersion = "1.20260213.00.00",

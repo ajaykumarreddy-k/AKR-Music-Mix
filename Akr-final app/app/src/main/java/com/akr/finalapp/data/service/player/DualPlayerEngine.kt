@@ -48,6 +48,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -62,6 +63,7 @@ import com.akr.finalapp.data.navidrome.NavidromeStreamProxy
 import com.akr.finalapp.data.qqmusic.QqMusicStreamProxy
 import androidx.core.net.toUri
 import com.akr.finalapp.data.repository.YoutubeRepository
+import com.akr.finalapp.data.repository.MusicRepository
 
 data class ActiveDecoderInfo(
     val name: String,
@@ -213,7 +215,8 @@ class DualPlayerEngine @Inject constructor(
     private val gdriveStreamProxy: com.akr.finalapp.data.gdrive.GDriveStreamProxy,
     private val telegramCacheManager: com.akr.finalapp.data.telegram.TelegramCacheManager,
     private val connectivityStateHolder: com.akr.finalapp.presentation.viewmodel.ConnectivityStateHolder,
-    private val youtubeRepository: YoutubeRepository
+    private val youtubeRepository: YoutubeRepository,
+    private val musicRepository: MusicRepository
 ) {
     private companion object {
         private const val AUDIO_OFFLOAD_STALL_FALLBACK_MS = 4_000L
@@ -1043,7 +1046,7 @@ class DualPlayerEngine @Inject constructor(
         rebuildPlayersPreservingMasterState("Hi-Fi mode set to $enabled")
     }
 
-    suspend fun resolveCloudUri(uri: Uri): Uri = withContext(Dispatchers.IO) {
+    suspend fun resolveCloudUri(uri: Uri, mediaItem: MediaItem? = null): Uri = withContext(Dispatchers.IO) {
         val uriString = uri.toString()
         resolvedUriCache.get(uriString)?.let { return@withContext it }
 
@@ -1054,7 +1057,7 @@ class DualPlayerEngine @Inject constructor(
             "navidrome" -> resolveNavidromeUriAsync(uriString)
             "jellyfin" -> resolveJellyfinUriAsync(uriString)
             "gdrive" -> resolveGDriveUriAsync(uriString)
-            "youtube" -> resolveYoutubeUriAsync(uri)
+            "youtube" -> resolveYoutubeUriAsync(uri, mediaItem)
             else -> null
         }
 
@@ -1120,17 +1123,28 @@ class DualPlayerEngine @Inject constructor(
         gdriveStreamProxy.resolveGDriveUri(uriString)?.toUri()
     }
 
-    private suspend fun resolveYoutubeUriAsync(uri: Uri): Uri? = withContext(Dispatchers.IO) {
+    private suspend fun resolveYoutubeUriAsync(uri: Uri, mediaItem: MediaItem?): Uri? = withContext(Dispatchers.IO) {
         val videoId = uri.host ?: return@withContext null
         Timber.tag("DualPlayerEngine").d("resolveYoutubeUriAsync: videoId=%s", videoId)
-        youtubeRepository.resolveStreamUrl(videoId).getOrNull()?.toUri()
+        var title = mediaItem?.mediaMetadata?.title?.toString()
+        var artist = mediaItem?.mediaMetadata?.artist?.toString()
+        if (title.isNullOrBlank()) {
+            try {
+                val song = musicRepository.getSongsByIds(listOf(videoId)).first().firstOrNull()
+                title = song?.title
+                artist = song?.artist
+            } catch (e: Exception) {
+                Timber.tag("DualPlayerEngine").w(e, "Failed to resolve metadata from database")
+            }
+        }
+        youtubeRepository.resolveStreamUrl(videoId, songTitle = title, songArtist = artist).getOrNull()?.toUri()
     }
 
     suspend fun resolveMediaItem(mediaItem: MediaItem): MediaItem {
         val uri = mediaItem.localConfiguration?.uri ?: return mediaItem
         val scheme = uri.scheme
         if (scheme !in REMOTE_MEDIA_SCHEMES) return mediaItem
-        val resolvedUri = resolveCloudUri(uri)
+        val resolvedUri = resolveCloudUri(uri, mediaItem)
         return if (resolvedUri == uri) mediaItem else mediaItem.buildUpon().setUri(resolvedUri).build()
     }
 
