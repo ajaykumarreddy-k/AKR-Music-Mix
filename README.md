@@ -1,8 +1,31 @@
-# AKR-Music-Mix 🎵
+# AKR - PixelPlayer 🎵
 
-Welcome to the **AKR-Music-Mix** monorepo, the central hub for the development of a state-of-the-art music streaming and playback ecosystem for Android and Wear OS. 
+<p align="center">
+  <img src="Music%20Logo%20.png" alt="AKR - PixelPlayer Logo" width="160"/>
+</p>
+
+Welcome to the **AKR - PixelPlayer** monorepo, the central hub for the development of a state-of-the-art music streaming and playback ecosystem for Android and Wear OS. 
 
 This repository represents the unification of two powerful music player codebases, combining local high-resolution playback capabilities with vast cloud streaming services and advanced Wear OS integration.
+
+---
+
+## 📸 Screenshots
+
+### Mobile App
+<p align="center">
+  <img src="result/screenshot1.jpg" width="30%" />
+  <img src="result/screenshot2.jpg" width="30%" />
+  <img src="result/screenshot3.jpg" width="30%" />
+</p>
+
+### Wear OS & Output Settings
+<p align="center">
+  <img src="result/WhatsApp%20Image%202026-06-08%20at%2018.50.46.jpeg" width="22%" />
+  <img src="result/WhatsApp%20Image%202026-06-08%20at%2018.50.46%20(1).jpeg" width="22%" />
+  <img src="result/WhatsApp%20Image%202026-06-08%20at%2018.50.46%20(2).jpeg" width="22%" />
+  <img src="result/WhatsApp%20Image%202026-06-08%20at%2018.50.45.jpeg" width="22%" />
+</p>
 
 ---
 

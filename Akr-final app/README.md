@@ -27,6 +27,25 @@
 
 ---
 
+## 📸 Screenshots
+
+### Mobile App
+<p align="center">
+  <img src="../result/screenshot1.jpg" width="30%" />
+  <img src="../result/screenshot2.jpg" width="30%" />
+  <img src="../result/screenshot3.jpg" width="30%" />
+</p>
+
+### Wear OS & Output Settings
+<p align="center">
+  <img src="../result/WhatsApp%20Image%202026-06-08%20at%2018.50.46.jpeg" width="22%" />
+  <img src="../result/WhatsApp%20Image%202026-06-08%20at%2018.50.46%20(1).jpeg" width="22%" />
+  <img src="../result/WhatsApp%20Image%202026-06-08%20at%2018.50.46%20(2).jpeg" width="22%" />
+  <img src="../result/WhatsApp%20Image%202026-06-08%20at%2018.50.45.jpeg" width="22%" />
+</p>
+
+---
+
 ## ✨ Features
 
 ### 🎨 Modern UI/UX
