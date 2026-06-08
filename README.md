@@ -14,9 +14,8 @@ This repository represents the unification of two powerful music player codebase
 
 ### Mobile App
 <p align="center">
-  <img src="result/screenshot1.jpg" width="30%" />
-  <img src="result/screenshot2.jpg" width="30%" />
-  <img src="result/screenshot3.jpg" width="30%" />
+  <img src="result/screenshot1.jpg" width="45%" />
+  <img src="result/screenshot3.jpg" width="45%" />
 </p>
 
 ### Wear OS & Output Settings
@@ -67,6 +66,14 @@ To build and run the main application:
 
 4. **Sync and Run:**
    Allow Android Studio to sync the Gradle build files. Once synced, you can deploy the `:app` module to your Android phone, or the `:wear` module to your Wear OS watch.
+
+---
+
+## 📜 Credits & Acknowledgments
+
+This project is a modified and unified version of two exceptional open-source music applications. Special thanks and credits go to:
+- **[PixelPlayer](https://github.com/theovilardo/PixelPlayer)** by [theovilardo](https://github.com/theovilardo) – for the beautiful Material 3 UI/UX foundation and local playback engine.
+- **[Echo-Music](https://github.com/EchoMusicApp)** by [EchoMusicApp](https://github.com/EchoMusicApp) – for the advanced streaming integrations, scraper modules, and lyrics syncing.
 
 ---
 

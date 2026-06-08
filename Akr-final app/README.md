@@ -31,9 +31,8 @@
 
 ### Mobile App
 <p align="center">
-  <img src="../result/screenshot1.jpg" width="30%" />
-  <img src="../result/screenshot2.jpg" width="30%" />
-  <img src="../result/screenshot3.jpg" width="30%" />
+  <img src="../result/screenshot1.jpg" width="45%" />
+  <img src="../result/screenshot3.jpg" width="45%" />
 </p>
 
 ### Wear OS & Output Settings
