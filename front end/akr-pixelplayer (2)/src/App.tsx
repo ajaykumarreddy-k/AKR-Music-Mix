@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function App() {
   const [currentScreenIndex, setCurrentScreenIndex] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [videoMounted, setVideoMounted] = useState(false);
+  const [videoOpacity, setVideoOpacity] = useState(0);
 
   const appScreens = [
     { title: "Home / Discover", path: new URL('../images/screenshot1.jpg', import.meta.url).href },
@@ -31,6 +33,15 @@ export default function App() {
       setCurrentScreenIndex((prevIndex) => (prevIndex + 1) % appScreens.length);
     }, 4000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Defer mounting background video for LCP optimization and trigger fade-in
+  useEffect(() => {
+    setVideoMounted(true);
+    const timer = setTimeout(() => {
+      setVideoOpacity(0.5);
+    }, 150);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleNextScreen = () => {
@@ -162,14 +173,17 @@ export default function App() {
 
         {/* Hero Video Background */}
         <div className="absolute inset-0 overflow-hidden -z-10 bg-[#0b0f19]">
-          <video
-            className="w-full h-full object-cover opacity-50 filter brightness-90 scale-100"
-            autoPlay
-            loop
-            muted
-            playsInline
-            src={new URL('../Pretty High Protein Lunch Ideas Worth Trying - Pin-988188343267502610.mp4', import.meta.url).href}
-          />
+          {videoMounted && (
+            <video
+              className="w-full h-full object-cover filter brightness-90 scale-100 transition-opacity duration-1000"
+              style={{ opacity: videoOpacity }}
+              autoPlay
+              loop
+              muted
+              playsInline
+              src={new URL('../Pretty High Protein Lunch Ideas Worth Trying - Pin-988188343267502610.mp4', import.meta.url).href}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0b0f19]/30 to-[#0b0f19]"></div>
         </div>
 
@@ -196,49 +210,24 @@ export default function App() {
               <div className="flex flex-col items-center lg:items-start gap-8 pt-4 w-full">
                 {/* Translucent QR Box */}
                 <div className="glass-panel p-6 rounded-[2.5rem] flex items-center justify-center w-48 h-48 border border-white/10 hover:border-white/20 transition-colors shadow-2xl">
-                  <div className="bg-white p-3 rounded-2xl shadow-inner">
-                    {/* SVG QR Code */}
-                    <svg className="w-28 h-28 text-black" viewBox="0 0 100 100" fill="currentColor">
-                      <rect x="0" y="0" width="25" height="25" />
-                      <rect x="3" y="3" width="19" height="19" fill="white" />
-                      <rect x="7" y="7" width="11" height="11" />
-
-                      <rect x="75" y="0" width="25" height="25" />
-                      <rect x="78" y="3" width="19" height="19" fill="white" />
-                      <rect x="82" y="7" width="11" height="11" />
-
-                      <rect x="0" y="75" width="25" height="25" />
-                      <rect x="3" y="78" width="19" height="19" fill="white" />
-                      <rect x="7" y="82" width="11" height="11" />
-
-                      <rect x="70" y="70" width="10" height="10" />
-                      <rect x="72" y="72" width="6" height="6" fill="white" />
-                      <rect x="74" y="74" width="2" height="2" />
-
-                      <rect x="35" y="5" width="5" height="15" />
-                      <rect x="45" y="10" width="10" height="5" />
-                      <rect x="60" y="5" width="5" height="5" />
-                      <rect x="30" y="25" width="15" height="5" />
-                      <rect x="50" y="20" width="5" height="15" />
-
-                      <rect x="5" y="35" width="15" height="5" />
-                      <rect x="15" y="45" width="5" height="15" />
-                      <rect x="0" y="60" width="10" height="5" />
-
-                      <rect x="80" y="35" width="15" height="5" />
-                      <rect x="75" y="45" width="5" height="15" />
-                      <rect x="90" y="55" width="10" height="10" />
-
-                      <rect x="30" y="75" width="5" height="20" />
-                      <rect x="40" y="85" width="15" height="5" />
-                      <rect x="55" y="75" width="5" height="10" />
-
-                      <rect x="35" y="40" width="30" height="5" />
-                      <rect x="40" y="50" width="5" height="20" />
-                      <rect x="55" y="45" width="15" height="5" />
-                      <rect x="50" y="60" width="10" height="15" />
-                      <rect x="65" y="55" width="5" height="20" />
-                    </svg>
+                  <div className="bg-white p-3 rounded-2xl shadow-inner flex items-center justify-center w-36 h-36">
+                    <img
+                      className="w-28 h-28 object-contain"
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=000000&bgcolor=ffffff&data=https://github.com/ajaykumarreddy-k/AKR-Music-Mix/releases/latest"
+                      alt="Download Link QR Code"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          const fallback = parent.querySelector('.qr-fallback');
+                          if (fallback) fallback.classList.remove('hidden');
+                        }
+                      }}
+                    />
+                    <div className="qr-fallback hidden text-black text-center font-bold text-xs tracking-tight">
+                      <Music className="w-8 h-8 mx-auto mb-1 text-[#FF4200]" />
+                      Scan to <br /> Download
+                    </div>
                   </div>
                 </div>
 
